@@ -1,0 +1,19 @@
+CREATE USER auser WITH PASSWORD '1234';
+
+CREATE USER admin WITH PASSWORD '1234';
+
+GRANT auser TO admin;
+
+ALTER USER admin CREATEDB;
+
+CREATE DATABASE db WITH OWNER admin;
+
+\connect db
+
+CREATE TABLE tbl (
+	id	SERIAL PRIMARY KEY,
+	var1	TEXT,
+	var2	TEXT
+);
+
+ALTER TABLE tbl OWNER TO auser;

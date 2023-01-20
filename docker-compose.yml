@@ -1,0 +1,131 @@
+version: '3'
+services: 
+  postgres1:
+    image: agilessst/postgres
+    build:
+      context: ./dockerfiles/postgres
+      args:
+        POSTGRES_VERSION: "15.1"
+    container_name: test-postgres-db-1
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+    volumes:
+      - postgres-volume-1:/var/lib/postgresql/data
+    networks:
+      - test-network
+  postgres2:
+    image: agilessst/postgres
+    build:
+      context: ./dockerfiles/postgres
+      args:
+        POSTGRES_VERSION: "15.1"
+    container_name: test-postgres-db-2
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+    volumes:
+      - postgres-volume-2:/var/lib/postgresql/data
+    networks:
+      - test-network
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 2181:2181
+    networks:
+      - test-network
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - test-network
+  kafka-init:
+    image: agilessst/kafka-init
+    build:
+      context: ./dockerfiles/kafka_topic_creator
+    container_name: kafka-init
+    depends_on:
+      - kafka
+    networks:
+      - test-network
+  kafka-publisher:
+    image: agilesst/kafka-publisher
+    build:
+      context: ./dockerfiles/publisher
+    container_name: kafka-publisher
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - test-network
+  spark:
+    image: docker.io/bitnami/spark:3.3
+    container_name: spark
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - '8080:8080'
+      - '7077'
+    networks:
+      - test-network
+    volumes:
+      - ./spark_fs_dir:/fs
+  spark-worker:
+    image: docker.io/bitnami/spark:3.3
+    depends_on:
+      - spark
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    deploy:
+      replicas: 3
+    networks:
+      - test-network
+    volumes:
+      - ./spark_fs_dir:/fs
+  jupyter:
+    image: agilessst/jupyter
+    build:
+      context: ./dockerfiles/jupyterlab
+    container_name: jupyter
+    depends_on:
+      - spark
+    networks:
+      - test-network
+    volumes:
+      - ./spark_fs_dir:/fs
+    ports:
+      - '8888:8888'
+volumes:
+  postgres-volume-1:
+    name: db-1
+  postgres-volume-2:
+    name: db-2
+networks:
+  test-network:
+    driver: bridge
+    external: false
+    name: test-network
