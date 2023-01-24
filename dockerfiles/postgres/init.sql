@@ -12,8 +12,8 @@ CREATE DATABASE db WITH OWNER admin;
 
 CREATE TABLE tbl (
 	id	SERIAL PRIMARY KEY,
-	var1	TEXT,
-	var2	TEXT
+	val1	TEXT,
+	val2	TEXT
 );
 
 ALTER TABLE tbl OWNER TO auser;

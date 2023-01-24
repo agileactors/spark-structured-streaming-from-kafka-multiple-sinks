@@ -30,7 +30,7 @@ while True:
   producer.produce("test", value=str(val), callback=acked)
   producer.flush()
   print("Flushed value: %s"%(str(val)))
-  wait_time = random.randint(0, 5)
+  wait_time = random.randint(0, 10)/2.0
   if wait_time > 0:
     time.sleep(wait_time)
 
