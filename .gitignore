@@ -1,0 +1,3 @@
+./spark_fs_dir/checkpoints
+./spark_fs_dir/log_checkpoints
+./spark_fs_dir/.ipynb_checkpoints
