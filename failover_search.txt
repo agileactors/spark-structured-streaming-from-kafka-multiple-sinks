@@ -1,0 +1,13 @@
+- at least once guarantee from Spark Structured Streaming 
+	x distinct on streaming batch 
+	x left_anti join on data from sink 
+	x append the result of left_anti join 
+- two writes or none / what if a sink is unavailable? 
+	x are they concurrently or sequentially performed ? 
+	x if sequentially, depends on first or second failure 
+	x if concurrently, handle each source seperately 
+- Spark Structured Streaming executor lost 
+	x if data are replicated, spark will handle.
+	x if data not replicated between executors what happens? do checkpoints handle it ? 
+- if Spark goes down, checkpoints do the thing
+- What if kafka down? 
